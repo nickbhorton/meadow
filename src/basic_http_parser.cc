@@ -1,3 +1,4 @@
+#include <optional>
 #include <sstream>
 #include <string>
 
@@ -104,4 +105,31 @@ auto http::BasicParser::parse_request_line(std::string raw_request_line) const
     std::tuple<RequestMethod, raw_request_target_t, ProtocolVersion> const
         result{request_method, target, pv};
     return result;
+}
+
+auto BasicParser::parse_header(std::string raw_header) const
+    -> std::optional<std::pair<std::string, std::string>>
+{
+    auto colon_pos = raw_header.find_first_of(':');
+    if (colon_pos == std::string::npos) {
+        return {};
+    }
+    std::string first{raw_header.substr(0, colon_pos)};
+    std::string second{raw_header.substr(colon_pos + 1)};
+    std::pair<std::string, std::string> result{first, second};
+    return result;
+}
+
+auto BasicParser::parse_target(raw_request_target_t raw_target) const
+    -> std::pair<std::string, std::optional<std::string>>
+{
+    auto const question_mark_pos{raw_target.find_first_of('?')};
+    if (question_mark_pos != std::string::npos) {
+        return {
+            raw_target.substr(0, question_mark_pos),
+            raw_target.substr(question_mark_pos + 1)
+        };
+    } else {
+        return {raw_target, {}};
+    }
 }

@@ -18,12 +18,25 @@ FetchContent_MakeAvailable(googletest)
 add_library(
     http_parser
     src/basic_http_parser.cc
+    src/http_response.cc
 )
 
+add_executable(
+    meadow
+    src/server.cc
+)
+target_link_libraries(
+    meadow
+    http_parser
+)
+
+# TESTS
 add_executable(
   http_test
   test/http_parser_split.cc
   test/http_parser_parse_request_line.cc
+  test/http_parser_parse_header.cc
+  test/http_parser_parse_target.cc
 )
 target_link_libraries(
   http_test
