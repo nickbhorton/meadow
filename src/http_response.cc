@@ -19,8 +19,9 @@ auto ResponseHeader::to_string() const -> std::string
     } else {
         ss << "HTTP/1.1 ";
     }
-    ss << status_code << " " << status_message;
-    ss << "\r\n\r\n";
+    ss << status_code << " " << status_message << "\r\n";
+    ss << "Server: Meadow\r\n";
+    ss << "\r\n";
     return ss.str();
 }
 
