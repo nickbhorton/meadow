@@ -19,97 +19,71 @@ struct ServerContext {
 void usage();
 
 // helper functions i am to lazy to refactor
+auto read_file_to_string(std::ifstream& file) -> std::string;
 auto read_connection_line(int fd) -> std::string;
 auto read_until_double_newline(int fd) -> std::string;
+auto write_connection(int fd, std::string const& msg) -> int;
+auto server_side_redirect(
+    std::vector<std::pair<std::string, std::string>> const& redirects,
+    std::string const& raw_url
+) -> std::string;
+auto get_file_extension(std::string const& filepath) -> std::string;
+auto extension_to_mime_type(std::string const& extension) -> std::string;
 
 void handle_request(int connection_fd, ServerContext const& context)
 {
     std::unique_ptr<http::Parser> const parser =
         std::make_unique<http::BasicParser>();
+
     auto const start_line_opt =
         parser->parse_request_line(read_connection_line(connection_fd));
+
     if (!start_line_opt.has_value()) {
-        http::ResponseHeader response_header{};
-        response_header.set_status_code(400);
-        response_header.set_status_message("Bad Request");
-        std::string response{response_header.to_string()};
-        int n = write(connection_fd, response.c_str(), response.size());
-        if (n < 0) {
-            std::cerr << "failed to write response\n";
-        }
+        http::ResponseHeader response_header{400, "Bad Request"};
+        write_connection(connection_fd, response_header.to_string());
         return;
     }
 
     auto const [request_method, target, version] = start_line_opt.value();
-    auto const [url, query] = parser->parse_target(target);
+    auto const [raw_url, query] = parser->parse_target(target);
     std::vector<std::pair<std::string, std::string>> headers{};
     {
         std::vector<std::string> raw_headers{
             parser->split(read_until_double_newline(connection_fd))
         };
-        int failed_headers{0};
         for (auto& raw_header : raw_headers) {
             auto const header_opt = parser->parse_header(std::move(raw_header));
             if (header_opt.has_value()) {
                 headers.push_back(std::move(header_opt.value()));
-            } else {
-                failed_headers++;
             }
         }
     }
+
     switch (request_method) {
-    // GET
     case http::RequestMethod::Get: {
-        std::string redirected_url{url};
-        for (auto const& [in, out] : context.server_side_redirects) {
-            if (redirected_url == in) {
-                redirected_url = out;
-            }
-        }
-        std::string filepath = context.mount_point + redirected_url;
-        std::cout << "file in GET request: " << filepath << "\n";
+        std::string const filepath{
+            context.mount_point +
+            server_side_redirect(context.server_side_redirects, raw_url)
+        };
+        std::cout << "GET: " << filepath << "\n";
         std::ifstream file(filepath.c_str());
         if (file.good()) {
-            http::ResponseHeader response_header{};
-            response_header.set_status_code(200);
-            response_header.set_status_message("Ok");
-            std::string response{response_header.to_string()};
-            int n = write(connection_fd, response.c_str(), response.size());
-            if (n < 0) {
-                std::cerr << "failed to write response\n";
-            }
-            std::stringstream buffer;
-            buffer << file.rdbuf();
-            std::string contents = buffer.str();
-            n = write(connection_fd, contents.c_str(), contents.size());
-            if (n < 0) {
-                std::cerr << "failed to write response\n";
-            }
-            return;
+            http::ResponseHeader response_header{200, "Ok"};
+            response_header.add_header(
+                "Content-Type",
+                extension_to_mime_type(get_file_extension(filepath))
+            );
+            write_connection(connection_fd, response_header.to_string());
+            write_connection(connection_fd, read_file_to_string(file));
         } else {
-            http::ResponseHeader response_header{};
-            response_header.set_status_code(404);
-            response_header.set_status_message("Not Found");
-            std::string response{response_header.to_string()};
-            int n = write(connection_fd, response.c_str(), response.size());
-            if (n < 0) {
-                std::cerr << "failed to write response\n";
-            }
-            return;
+            http::ResponseHeader response_header{404, "Not Found"};
+            write_connection(connection_fd, response_header.to_string());
         }
     } break;
 
     default:
-        http::ResponseHeader response_header{};
-        response_header.set_status_code(501);
-        response_header.set_status_message("Not Implemented");
-        std::string response{response_header.to_string()};
-        int n = write(connection_fd, response.c_str(), response.size());
-        if (n < 0) {
-            std::cerr << "failed to write response\n";
-        }
-        return;
-
+        http::ResponseHeader response_header{501, "Not Implemented"};
+        write_connection(connection_fd, response_header.to_string());
         break;
     }
 }
@@ -143,6 +117,14 @@ int main(int argc, char** argv)
         ) < 0) {
         std::cerr << "bind() call failed\n";
         std::exit(1);
+    }
+    {
+        int x{1};
+        if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &x, sizeof(x)) <
+            0) {
+            std::cerr << "setsockopt() call failed\n";
+            std::exit(1);
+        }
     }
 
     while (true) {
@@ -207,4 +189,70 @@ auto read_until_double_newline(int fd) -> std::string
         }
     }
     return line;
+}
+
+auto write_connection(int fd, std::string const& msg) -> int
+{
+    int n = write(fd, msg.c_str(), msg.size());
+    if (n < 0) {
+        std::cerr << "failed to write response in write connection\n";
+    }
+    return n;
+}
+
+auto read_file_to_string(std::ifstream& file) -> std::string
+{
+    std::stringstream buffer{};
+    buffer << file.rdbuf();
+    return buffer.str();
+}
+
+auto server_side_redirect(
+    std::vector<std::pair<std::string, std::string>> const& redirects,
+    std::string const& raw_url
+) -> std::string
+{
+    std::string result{raw_url};
+    for (auto const& [in, out] : redirects) {
+        if (result == in) {
+            result = out;
+        }
+    }
+    return result;
+}
+
+auto get_file_extension(std::string const& filepath) -> std::string
+{
+    auto const dot_pos{filepath.find(".")};
+    if (dot_pos != std::string::npos) {
+        std::string extention{filepath.substr(dot_pos + 1)};
+        return extention;
+    } else {
+        std::cerr << "file extension not found for " << filepath << "\n";
+        return "txt";
+    }
+}
+
+auto extension_to_mime_type(std::string const& extension) -> std::string
+{
+    if (extension == "txt") {
+        return "text/plain";
+    } else if (extension == "html") {
+        return "text/html";
+    } else if (extension == "css") {
+        return "text/css";
+    } else if (extension == "js") {
+        return "text/javascript";
+    } else if (extension == "jpg") {
+        return "image/jpeg";
+    } else if (extension == "jpeg") {
+        return "image/jpeg";
+    } else if (extension == "png") {
+        return "image/png";
+    } else if (extension == "gif") {
+        return "image/gif";
+    } else {
+        std::cerr << "mime type not found for " << extension << "\n";
+        return "text/plain";
+    }
 }
