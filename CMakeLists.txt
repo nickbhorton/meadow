@@ -22,7 +22,7 @@ add_library(
 
 add_executable(
   http_test
-  test/http.cc
+  test/http_parser.cc
 )
 target_link_libraries(
   http_test
