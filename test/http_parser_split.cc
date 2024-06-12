@@ -4,9 +4,9 @@
 
 #include "basic_http_parser.h"
 
-TEST(HTTPParserTest, SplitHappy)
+TEST(ParserTest, SplitHappy)
 {
-    std::unique_ptr<HTTPParser> parser = std::make_unique<BasicHTTPParser>();
+    std::unique_ptr<http::Parser> parser = std::make_unique<http::BasicParser>();
     {
         std::string test_string{
             "This is a happy case test.\nThere will be no glaring "
@@ -63,9 +63,9 @@ TEST(HTTPParserTest, SplitHappy)
     }
 }
 
-TEST(HTTPParserTest, SplitEndNewline)
+TEST(ParserTest, SplitEndNewline)
 {
-    std::unique_ptr<HTTPParser> parser = std::make_unique<BasicHTTPParser>();
+    std::unique_ptr<http::Parser> parser = std::make_unique<http::BasicParser>();
     {
         std::string test_string{
             "This is a test.\nThere will be a glaring "
@@ -116,9 +116,9 @@ TEST(HTTPParserTest, SplitEndNewline)
     }
 }
 
-TEST(HTTPParserTest, SplitDoubleNewline)
+TEST(ParserTest, SplitDoubleNewline)
 {
-    std::unique_ptr<HTTPParser> parser = std::make_unique<BasicHTTPParser>();
+    std::unique_ptr<http::Parser> parser = std::make_unique<http::BasicParser>();
     {
         std::string test_string{
             "This is the head\r\n\r\nThis is the payload\r\nthis will be in "
@@ -157,9 +157,9 @@ TEST(HTTPParserTest, SplitDoubleNewline)
     }
 }
 
-TEST(HTTPParserTest, SplitEmptyString)
+TEST(ParserTest, SplitEmptyString)
 {
-    std::unique_ptr<HTTPParser> parser = std::make_unique<BasicHTTPParser>();
+    std::unique_ptr<http::Parser> parser = std::make_unique<http::BasicParser>();
     std::string test_string{};
     std::vector<std::string> parsed_strings =
         parser->split(std::move(test_string));
@@ -167,9 +167,9 @@ TEST(HTTPParserTest, SplitEmptyString)
         << "Did not parser the correct number of string";
 }
 
-TEST(HTTPParserTest, SplitNoNewLine)
+TEST(ParserTest, SplitNoNewLine)
 {
-    std::unique_ptr<HTTPParser> parser = std::make_unique<BasicHTTPParser>();
+    std::unique_ptr<http::Parser> parser = std::make_unique<http::BasicParser>();
     std::string test_string{"this is a single line."};
     std::vector<std::string> parsed_strings =
         parser->split(std::move(test_string));
@@ -178,9 +178,9 @@ TEST(HTTPParserTest, SplitNoNewLine)
     EXPECT_STREQ("this is a single line.", parsed_strings[0].c_str());
 }
 
-TEST(HTTPParserTest, SplitNoHeader)
+TEST(ParserTest, SplitNoHeader)
 {
-    std::unique_ptr<HTTPParser> parser = std::make_unique<BasicHTTPParser>();
+    std::unique_ptr<http::Parser> parser = std::make_unique<http::BasicParser>();
     {
         std::string test_string{"\n\nNo header\nmultiple lines."};
         std::vector<std::string> parsed_strings =
@@ -201,9 +201,9 @@ TEST(HTTPParserTest, SplitNoHeader)
     }
 }
 
-TEST(HTTPParserTest, SplitHTTPExample)
+TEST(ParserTest, SplitHTTPExample)
 {
-    std::unique_ptr<HTTPParser> parser = std::make_unique<BasicHTTPParser>();
+    std::unique_ptr<http::Parser> parser = std::make_unique<http::BasicParser>();
     {
         std::string test_string{
             "POST /cgi-bin/process.cgi HTTP/1.1\n"
@@ -295,9 +295,9 @@ TEST(HTTPParserTest, SplitHTTPExample)
     }
 }
 
-TEST(HTTPParserTest, SplitJustStartLine)
+TEST(ParserTest, SplitJustStartLine)
 {
-    std::unique_ptr<HTTPParser> parser = std::make_unique<BasicHTTPParser>();
+    std::unique_ptr<http::Parser> parser = std::make_unique<http::BasicParser>();
     {
         std::string test_string{"POST /cgi-bin/process.cgi HTTP/1.1\n"};
         std::vector<std::string> parsed_strings =

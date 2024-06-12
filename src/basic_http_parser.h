@@ -2,10 +2,17 @@
 
 #include "http_parser.h"
 
-class BasicHTTPParser : public HTTPParser
+namespace http
+{
+class BasicParser : public Parser
 {
 public:
-    BasicHTTPParser();
+    BasicParser();
 
-    auto split(std::string request) -> std::vector<std::string>;
+    auto split(std::string request) const -> std::vector<std::string>;
+    auto parse_request_line(std::string raw_request_line) const
+        -> std::optional<
+            std::tuple<RequestMethod, raw_request_target_t, ProtocolVersion>>;
 };
+
+} // namespace http

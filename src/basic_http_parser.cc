@@ -2,8 +2,14 @@
 #include <string>
 
 #include "basic_http_parser.h"
+#include "http_parser.h"
 
-auto BasicHTTPParser::split(std::string request) -> std::vector<std::string>
+using namespace http;
+
+http::BasicParser::BasicParser() {}
+
+auto http::BasicParser::split(std::string request) const
+    -> std::vector<std::string>
 {
     std::vector<std::string> result{};
     std::istringstream ss{request};
@@ -42,4 +48,60 @@ auto BasicHTTPParser::split(std::string request) -> std::vector<std::string>
     return result;
 }
 
-BasicHTTPParser::BasicHTTPParser() {}
+auto http::BasicParser::parse_request_line(std::string raw_request_line) const
+    -> std::optional<
+        std::tuple<RequestMethod, raw_request_target_t, ProtocolVersion>>
+{
+    std::stringstream ss{raw_request_line};
+    std::string store{};
+
+    RequestMethod request_method{};
+    ss >> store;
+    auto const asciitolower = [](char in) -> char {
+        if (in <= 'Z' && in >= 'A') {
+            return in - ('Z' - 'z');
+        }
+        return in;
+    };
+
+    std::transform(store.begin(), store.end(), store.begin(), asciitolower);
+    if (store == "get") {
+        request_method = RequestMethod::Get;
+    } else if (store == "head") {
+        request_method = RequestMethod::Head;
+    } else if (store == "post") {
+        request_method = RequestMethod::Post;
+    } else if (store == "put") {
+        request_method = RequestMethod::Put;
+    } else if (store == "delete") {
+        request_method = RequestMethod::Delete;
+    } else if (store == "connect") {
+        request_method = RequestMethod::Connect;
+    } else if (store == "options") {
+        request_method = RequestMethod::Options;
+    } else if (store == "trace") {
+        request_method = RequestMethod::Trace;
+    } else if (store == "patch") {
+        request_method = RequestMethod::Patch;
+    } else {
+        return {};
+    }
+
+    raw_request_target_t target{};
+    ss >> target;
+
+    ProtocolVersion pv{};
+    store.clear();
+    ss >> store;
+    if (store == "HTTP/1.1") {
+        pv = ProtocolVersion::OnePointOne;
+    } else if (store == "HTTP/1.0") {
+        pv = ProtocolVersion::One;
+    } else {
+        return {};
+    }
+
+    std::tuple<RequestMethod, raw_request_target_t, ProtocolVersion> const
+        result{request_method, target, pv};
+    return result;
+}
