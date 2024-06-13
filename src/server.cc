@@ -13,7 +13,7 @@
 
 struct ServerContext {
     std::string mount_point;
-    std::vector<std::pair<std::string, std::string>> server_side_redirects;
+    std::vector<std::pair<std::string, std::string>> server_side_locations;
     std::vector<std::pair<std::string, std::string>> extension_to_mime_type;
 };
 
@@ -24,11 +24,12 @@ auto read_file_to_string(std::ifstream& file) -> std::string;
 auto read_connection_line(int fd) -> std::string;
 auto read_until_double_newline(int fd) -> std::string;
 auto write_connection(int fd, std::string const& msg) -> int;
-auto server_side_redirect(
-    std::string const& raw_url,
-    std::vector<std::pair<std::string, std::string>> const& redirects
-) -> std::string;
 auto get_file_extension(std::string const& filepath) -> std::string;
+
+auto server_locate(
+    std::string const& raw_url,
+    std::vector<std::pair<std::string, std::string>> const& locations
+) -> std::string;
 auto extension_to_mime_type(
     std::string const& extension,
     std::vector<std::pair<std::string, std::string>> const&
@@ -66,13 +67,12 @@ void handle_request(int connection_fd, ServerContext const& context)
 
     switch (request_method) {
     case http::RequestMethod::Get: {
-        std::string const filepath{
-            context.mount_point +
-            server_side_redirect(raw_url, context.server_side_redirects)
-        };
-        std::cout << "GET: " << filepath << "\n";
+        std::string location =
+            server_locate(raw_url, context.server_side_locations);
+        std::string const filepath{context.mount_point + location};
         std::ifstream file(filepath.c_str());
-        if (file.good()) {
+        if (file.good() && location.size() > 0) {
+            std::cout << "GET: " << filepath << "\n";
             http::ResponseHeader response_header{200, "Ok"};
             response_header.add_header(
                 "Content-Type",
@@ -104,7 +104,11 @@ int main(int argc, char** argv)
     }
     ServerContext const context =
         {.mount_point = argv[2],
-         .server_side_redirects = {{"/", "/index.html"}},
+         .server_side_locations =
+             {{"/", "/index.html"},
+              {"/styles.css", "/styles.css"},
+              {"/me.jpg", "/me.jpg"},
+              {"/", "/index.html"}},
          .extension_to_mime_type = {
              {"html", "text/html"},
              {"css", "text/css"},
@@ -223,14 +227,14 @@ auto read_file_to_string(std::ifstream& file) -> std::string
     return buffer.str();
 }
 
-auto server_side_redirect(
+auto server_locate(
     std::string const& raw_url,
     std::vector<std::pair<std::string, std::string>> const& redirects
 ) -> std::string
 {
-    std::string result{raw_url};
+    std::string result{};
     for (auto const& [in, out] : redirects) {
-        if (result == in) {
+        if (raw_url == in) {
             result = out;
         }
     }
