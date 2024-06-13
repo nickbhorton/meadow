@@ -46,6 +46,7 @@ void handle_request(int connection_fd, ServerContext const& context)
 
     if (!start_line_opt.has_value()) {
         http::ResponseHeader response_header{400, "Bad Request"};
+        response_header.add_header("Connection", "closed");
         write_connection(connection_fd, response_header.to_string());
         return;
     }
@@ -81,16 +82,19 @@ void handle_request(int connection_fd, ServerContext const& context)
                     context.extension_to_mime_type
                 )
             );
+            response_header.add_header("Connection", "closed");
             write_connection(connection_fd, response_header.to_string());
             write_connection(connection_fd, read_file_to_string(file));
         } else {
             http::ResponseHeader response_header{404, "Not Found"};
+            response_header.add_header("Connection", "closed");
             write_connection(connection_fd, response_header.to_string());
         }
     } break;
 
     default:
         http::ResponseHeader response_header{501, "Not Implemented"};
+        response_header.add_header("Connection", "closed");
         write_connection(connection_fd, response_header.to_string());
         break;
     }
