@@ -14,6 +14,7 @@
 struct ServerContext {
     std::string mount_point;
     std::vector<std::pair<std::string, std::string>> server_side_redirects;
+    std::vector<std::pair<std::string, std::string>> extension_to_mime_type;
 };
 
 void usage();
@@ -24,11 +25,15 @@ auto read_connection_line(int fd) -> std::string;
 auto read_until_double_newline(int fd) -> std::string;
 auto write_connection(int fd, std::string const& msg) -> int;
 auto server_side_redirect(
-    std::vector<std::pair<std::string, std::string>> const& redirects,
-    std::string const& raw_url
+    std::string const& raw_url,
+    std::vector<std::pair<std::string, std::string>> const& redirects
 ) -> std::string;
 auto get_file_extension(std::string const& filepath) -> std::string;
-auto extension_to_mime_type(std::string const& extension) -> std::string;
+auto extension_to_mime_type(
+    std::string const& extension,
+    std::vector<std::pair<std::string, std::string>> const&
+        extension_to_mime_type
+) -> std::string;
 
 void handle_request(int connection_fd, ServerContext const& context)
 {
@@ -63,7 +68,7 @@ void handle_request(int connection_fd, ServerContext const& context)
     case http::RequestMethod::Get: {
         std::string const filepath{
             context.mount_point +
-            server_side_redirect(context.server_side_redirects, raw_url)
+            server_side_redirect(raw_url, context.server_side_redirects)
         };
         std::cout << "GET: " << filepath << "\n";
         std::ifstream file(filepath.c_str());
@@ -71,7 +76,10 @@ void handle_request(int connection_fd, ServerContext const& context)
             http::ResponseHeader response_header{200, "Ok"};
             response_header.add_header(
                 "Content-Type",
-                extension_to_mime_type(get_file_extension(filepath))
+                extension_to_mime_type(
+                    get_file_extension(filepath),
+                    context.extension_to_mime_type
+                )
             );
             write_connection(connection_fd, response_header.to_string());
             write_connection(connection_fd, read_file_to_string(file));
@@ -94,10 +102,18 @@ int main(int argc, char** argv)
         usage();
         std::exit(1);
     }
-    ServerContext const context = {
-        .mount_point = argv[2],
-        .server_side_redirects = {{"/", "/index.html"}}
-    };
+    ServerContext const context =
+        {.mount_point = argv[2],
+         .server_side_redirects = {{"/", "/index.html"}},
+         .extension_to_mime_type = {
+             {"html", "text/html"},
+             {"css", "text/css"},
+             {"js", "text/javascript"},
+             {"txt", "text/plain"},
+             {"jpg", "image/jpeg"},
+             {"jpeg", "image/jpeg"},
+             {"png", "image/png"},
+         }};
     std::cout << "server mounted on " << context.mount_point << "\n";
     sockaddr_in server_address{};
     server_address.sin_port = htons(atoi(argv[1]));
@@ -208,8 +224,8 @@ auto read_file_to_string(std::ifstream& file) -> std::string
 }
 
 auto server_side_redirect(
-    std::vector<std::pair<std::string, std::string>> const& redirects,
-    std::string const& raw_url
+    std::string const& raw_url,
+    std::vector<std::pair<std::string, std::string>> const& redirects
 ) -> std::string
 {
     std::string result{raw_url};
@@ -233,26 +249,17 @@ auto get_file_extension(std::string const& filepath) -> std::string
     }
 }
 
-auto extension_to_mime_type(std::string const& extension) -> std::string
+auto extension_to_mime_type(
+    std::string const& extension,
+    std::vector<std::pair<std::string, std::string>> const&
+        extension_to_mime_type
+) -> std::string
 {
-    if (extension == "txt") {
-        return "text/plain";
-    } else if (extension == "html") {
-        return "text/html";
-    } else if (extension == "css") {
-        return "text/css";
-    } else if (extension == "js") {
-        return "text/javascript";
-    } else if (extension == "jpg") {
-        return "image/jpeg";
-    } else if (extension == "jpeg") {
-        return "image/jpeg";
-    } else if (extension == "png") {
-        return "image/png";
-    } else if (extension == "gif") {
-        return "image/gif";
-    } else {
-        std::cerr << "mime type not found for " << extension << "\n";
-        return "text/plain";
+    for (auto const& [test_extension, mime_type] : extension_to_mime_type) {
+        if (test_extension == extension) {
+            return mime_type;
+        }
     }
+    std::cerr << "mime type not found for " << extension << "\n";
+    return "text/plain";
 }
