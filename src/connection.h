@@ -25,6 +25,7 @@ public:
     auto read_line() -> std::string;
     auto read_header() -> std::string;
     auto write(std::string const& msg) -> void;
+    auto read(size_t amount) -> std::string;
 };
 
 } // namespace http

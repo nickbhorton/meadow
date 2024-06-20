@@ -79,10 +79,16 @@ void handle_request(http::Connection& connection, ServerContext const& context)
 
     default:
         std::cout << request_method << ": " << raw_url << "\n";
+        std::string payload{};
         for (auto const& [first, second] : headers) {
             std::cout << "\t" << first << ": " << second << "\n";
+            if (first == "Content-Length") {
+                payload = connection.read(stoi(second));
+            }
         }
-        std::cout << connection.read_line() << "\n";
+        if (payload.size()) {
+            std::cout << "Payload" << payload << "\n";
+        }
         http::ResponseHeader response_header{501, "Not Implemented"};
         response_header.add_header("Connection", "closed");
         connection.write(response_header.to_string());

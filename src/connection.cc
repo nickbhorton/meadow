@@ -27,12 +27,23 @@ auto Connection::read_line() -> std::string
     std::string line{};
     while (true && live) {
         char c;
-        int n = read(confd, &c, 1);
+        int n = ::read(confd, &c, 1);
         if (c == '\n') {
             break;
         } else {
             line.push_back(c);
         }
+    }
+    return line;
+}
+
+auto Connection::read(size_t amount) -> std::string
+{
+    std::string line{};
+    for (size_t i = 0; i < amount; i++) {
+        char c;
+        int n = ::read(confd, &c, 1);
+        line.push_back(c);
     }
     return line;
 }
@@ -48,7 +59,7 @@ auto Connection::read_header() -> std::string
     char buffer[buff_size] = {0, 0, 0, 0};
     size_t ptr{0};
     while (true) {
-        int n = read(confd, buffer + (ptr % 4), 1);
+        int n = ::read(confd, buffer + (ptr % 4), 1);
         if (n > 0) {
             ptr += n;
         }
