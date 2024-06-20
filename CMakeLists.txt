@@ -13,6 +13,7 @@ FetchContent_Declare(
   URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
 )
 
+set(INSTALL_GTEST OFF)
 FetchContent_MakeAvailable(googletest)
 
 add_library(
@@ -24,10 +25,19 @@ add_library(
 add_executable(
     meadow
     src/server.cc
+    src/helpers.cc
+    src/connection.cc
 )
 target_link_libraries(
     meadow
     http_parser
+)
+install(
+    TARGETS
+    meadow
+    RUNTIME
+    DESTINATION
+    /home/nick/.local/bin
 )
 
 # TESTS

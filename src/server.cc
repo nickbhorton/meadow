@@ -1,7 +1,8 @@
 #include "basic_http_parser.h"
+#include "connection.h"
+#include "helpers.h"
 #include "http_parser.h"
 #include "http_response.h"
-#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <memory>
@@ -12,54 +13,37 @@
 #include <unistd.h>
 
 struct ServerContext {
+    int port;
     std::string mount_point;
     std::vector<std::pair<std::string, std::string>> server_side_locations;
     std::vector<std::pair<std::string, std::string>> extension_to_mime_type;
 };
 
-void usage();
+std::unique_ptr<http::Parser> const http_parser =
+    std::make_unique<http::BasicParser>();
 
-// helper functions i am to lazy to refactor
-auto read_file_to_string(std::ifstream& file) -> std::string;
-auto read_connection_line(int fd) -> std::string;
-auto read_until_double_newline(int fd) -> std::string;
-auto write_connection(int fd, std::string const& msg) -> int;
-auto get_file_extension(std::string const& filepath) -> std::string;
-
-auto server_locate(
-    std::string const& raw_url,
-    std::vector<std::pair<std::string, std::string>> const& locations
-) -> std::string;
-auto extension_to_mime_type(
-    std::string const& extension,
-    std::vector<std::pair<std::string, std::string>> const&
-        extension_to_mime_type
-) -> std::string;
-
-void handle_request(int connection_fd, ServerContext const& context)
+void handle_request(http::Connection& connection, ServerContext const& context)
 {
-    std::unique_ptr<http::Parser> const parser =
-        std::make_unique<http::BasicParser>();
-
     auto const start_line_opt =
-        parser->parse_request_line(read_connection_line(connection_fd));
+        http_parser->parse_request_line(connection.read_line());
 
     if (!start_line_opt.has_value()) {
         http::ResponseHeader response_header{400, "Bad Request"};
         response_header.add_header("Connection", "closed");
-        write_connection(connection_fd, response_header.to_string());
+        connection.write(response_header.to_string());
         return;
     }
 
     auto const [request_method, target, version] = start_line_opt.value();
-    auto const [raw_url, query] = parser->parse_target(target);
+    auto const [raw_url, query] = http_parser->parse_target(target);
     std::vector<std::pair<std::string, std::string>> headers{};
     {
         std::vector<std::string> raw_headers{
-            parser->split(read_until_double_newline(connection_fd))
+            http_parser->split(connection.read_header())
         };
         for (auto& raw_header : raw_headers) {
-            auto const header_opt = parser->parse_header(std::move(raw_header));
+            auto const header_opt =
+                http_parser->parse_header(std::move(raw_header));
             if (header_opt.has_value()) {
                 headers.push_back(std::move(header_opt.value()));
             }
@@ -71,9 +55,9 @@ void handle_request(int connection_fd, ServerContext const& context)
         std::string location =
             server_locate(raw_url, context.server_side_locations);
         std::string const filepath{context.mount_point + location};
+        std::cout << "GET: " << filepath << "|" << raw_url << "\n";
         std::ifstream file(filepath.c_str());
         if (file.good() && location.size() > 0) {
-            std::cout << "GET: " << filepath << "\n";
             http::ResponseHeader response_header{200, "Ok"};
             response_header.add_header(
                 "Content-Type",
@@ -83,50 +67,82 @@ void handle_request(int connection_fd, ServerContext const& context)
                 )
             );
             response_header.add_header("Connection", "closed");
-            write_connection(connection_fd, response_header.to_string());
-            write_connection(connection_fd, read_file_to_string(file));
+            connection.write(response_header.to_string());
+            connection.write(read_file_to_string(file));
         } else {
+            std::cout << "file not found\n";
             http::ResponseHeader response_header{404, "Not Found"};
             response_header.add_header("Connection", "closed");
-            write_connection(connection_fd, response_header.to_string());
+            connection.write(response_header.to_string());
         }
     } break;
 
     default:
+        std::cout << request_method << ": " << raw_url << "\n";
+        for (auto const& [first, second] : headers) {
+            std::cout << "\t" << first << ": " << second << "\n";
+        }
+        std::cout << connection.read_line() << "\n";
         http::ResponseHeader response_header{501, "Not Implemented"};
         response_header.add_header("Connection", "closed");
-        write_connection(connection_fd, response_header.to_string());
+        connection.write(response_header.to_string());
         break;
     }
 }
 
 int main(int argc, char** argv)
 {
-    if (argc != 3) {
-        usage();
+    std::ifstream meadow_file{};
+    meadow_file.open("meadow.txt");
+    if (!meadow_file.good()) {
+        std::cerr << "did not find meadow.txt file\n";
         std::exit(1);
     }
-    ServerContext const context =
-        {.mount_point = argv[2],
-         .server_side_locations =
-             {{"/", "/index.html"},
-              {"/styles.css", "/styles.css"},
-              {"/me.jpg", "/me.jpg"},
-              {"/", "/index.html"}},
-         .extension_to_mime_type = {
-             {"html", "text/html"},
-             {"css", "text/css"},
-             {"js", "text/javascript"},
-             {"txt", "text/plain"},
-             {"jpg", "image/jpeg"},
-             {"jpeg", "image/jpeg"},
-             {"png", "image/png"},
-         }};
-    std::cout << "server mounted on " << context.mount_point << "\n";
     sockaddr_in server_address{};
-    server_address.sin_port = htons(atoi(argv[1]));
     server_address.sin_family = AF_INET;
     server_address.sin_addr.s_addr = INADDR_ANY;
+    ServerContext context{};
+    std::string line{};
+    while (!meadow_file.eof()) {
+        std::getline(meadow_file, line);
+        std::stringstream ss{line};
+        std::string token{};
+        ss >> token;
+        if (token == "mount") {
+            token.clear();
+            ss >> token;
+            context.mount_point = token;
+        } else if (token == "port") {
+            token.clear();
+            ss >> token;
+            context.port = stoi(token);
+            server_address.sin_port = htons(context.port);
+        } else if (token == "index") {
+            token.clear();
+            ss >> token;
+            std::cout << "index: " << token << "\n";
+            context.server_side_locations.push_back({"/", token});
+        } else if (token == "ext") {
+            std::string mime_type{};
+            std::string ext_type{};
+            ss >> ext_type;
+            ss >> mime_type;
+            context.extension_to_mime_type.push_back({ext_type, mime_type});
+        } else if (token == "endpoint") {
+            std::string method{};
+            std::string pointname{};
+            std::string filename{};
+            ss >> method;
+            ss >> pointname;
+            ss >> filename;
+            std::cout << pointname << " " << filename << "\n";
+            context.server_side_locations.push_back({pointname, filename});
+        } else if (token.size() > 0) {
+            std::cout << "unrecognized token: " << token << "\n";
+        }
+    }
+    std::cout << "Meadow server mounted on " << context.mount_point << "\n";
+    std::cout << "Port: " << context.port << "\n";
 
     int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_fd < 0) {
@@ -143,10 +159,25 @@ int main(int argc, char** argv)
         std::exit(1);
     }
     {
-        int x{1};
-        if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &x, sizeof(x)) <
-            0) {
-            std::cerr << "setsockopt() call failed\n";
+        int enable{1};
+        if (setsockopt(
+                socket_fd,
+                SOL_SOCKET,
+                SO_REUSEADDR,
+                &enable,
+                sizeof(enable)
+            ) < 0) {
+            std::cerr << "setsockopt() SO_REUSEADDR call failed\n";
+            std::exit(1);
+        }
+        if (setsockopt(
+                socket_fd,
+                SOL_SOCKET,
+                SO_REUSEPORT,
+                &enable,
+                sizeof(enable)
+            ) < 0) {
+            std::cerr << "setsockopt() SO_REUSEPORT call failed\n";
             std::exit(1);
         }
     }
@@ -164,110 +195,8 @@ int main(int argc, char** argv)
             std::cerr << "accept() call failed\n";
             close(connection_fd);
         } else {
-            handle_request(connection_fd, context);
-            close(connection_fd);
+            http::Connection connection(connection_fd);
+            handle_request(connection, context);
         }
     }
-}
-
-void usage() { std::cout << "meadow [port] [mount dir]\n"; }
-
-auto read_connection_line(int fd) -> std::string
-{
-    std::string line{};
-    while (true) {
-        char c;
-        int n = read(fd, &c, 1);
-        if (c == '\n') {
-            break;
-        } else {
-            line.push_back(c);
-        }
-    }
-    return line;
-}
-auto read_until_double_newline(int fd) -> std::string
-{
-    std::string line{};
-    size_t constexpr buff_size = 4;
-    char buffer[buff_size] = {0, 0, 0, 0};
-    size_t ptr{0};
-    while (true) {
-        int n = read(fd, buffer + (ptr % 4), 1);
-        if (n > 0) {
-            ptr += n;
-        }
-        line.push_back(buffer[ptr % 4]);
-        if (buffer[(ptr + 0) % 4] == '\r') {
-            if (buffer[(ptr + 1) % 4] == '\n') {
-                if (buffer[(ptr + 2) % 4] == '\r') {
-                    if (buffer[(ptr + 3) % 4] == '\n') {
-                        break;
-                    }
-                }
-            }
-        } else if (buffer[(ptr + 0) % 4] == '\n') {
-            if (buffer[(ptr + 1) % 4] == '\n') {
-                break;
-            }
-        }
-    }
-    return line;
-}
-
-auto write_connection(int fd, std::string const& msg) -> int
-{
-    int n = write(fd, msg.c_str(), msg.size());
-    if (n < 0) {
-        std::cerr << "failed to write response in write connection\n";
-    }
-    return n;
-}
-
-auto read_file_to_string(std::ifstream& file) -> std::string
-{
-    std::stringstream buffer{};
-    buffer << file.rdbuf();
-    return buffer.str();
-}
-
-auto server_locate(
-    std::string const& raw_url,
-    std::vector<std::pair<std::string, std::string>> const& redirects
-) -> std::string
-{
-    std::string result{};
-    for (auto const& [in, out] : redirects) {
-        if (raw_url == in) {
-            result = out;
-        }
-    }
-    return result;
-}
-
-auto get_file_extension(std::string const& filepath) -> std::string
-{
-    auto const dot_pos{filepath.find(".")};
-    if (dot_pos != std::string::npos) {
-        std::string extention{filepath.substr(dot_pos + 1)};
-        return extention;
-    } else {
-        std::cerr << "file extension not found for " << filepath << "\n";
-        return "txt";
-    }
-}
-
-auto extension_to_mime_type(
-    std::string const& extension,
-    std::vector<std::pair<std::string, std::string>> const&
-        extension_to_mime_type
-) -> std::string
-{
-    for (auto const& [test_extension, mime_type] : extension_to_mime_type) {
-        if (test_extension == extension) {
-            return mime_type;
-        }
-    }
-    std::cerr << "mime type not found for " << extension << "\n";
-    return "text/plain";
 }

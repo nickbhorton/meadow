@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <ostream>
 #include <string>
 #include <vector>
 
@@ -45,3 +46,39 @@ public:
 };
 
 } // namespace http
+
+inline auto operator<<(std::ostream& os, http::RequestMethod rqm)
+    -> std::ostream&
+{
+    switch (rqm) {
+
+    case http::RequestMethod::Get:
+        os << "GET";
+        break;
+    case http::RequestMethod::Head:
+        os << "HEAD";
+        break;
+    case http::RequestMethod::Post:
+        os << "POST";
+        break;
+    case http::RequestMethod::Put:
+        os << "PUT";
+        break;
+    case http::RequestMethod::Delete:
+        os << "DELETE";
+        break;
+    case http::RequestMethod::Connect:
+        os << "CONNECT";
+        break;
+    case http::RequestMethod::Options:
+        os << "OPTIONS";
+        break;
+    case http::RequestMethod::Trace:
+        os << "TRACE";
+        break;
+    case http::RequestMethod::Patch:
+        os << "PATCH";
+        break;
+    }
+    return os;
+}
