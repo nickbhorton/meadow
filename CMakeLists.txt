@@ -41,17 +41,37 @@ target_link_libraries(
 
 add_executable(
     udp_echo 
-    src/udp_echo.cc
+    src/servers/udp_echo.cc
 )
 target_link_libraries(
     udp_echo
     udp_server
+)
+target_include_directories(
+    udp_echo
+    PUBLIC
+    ${CMAKE_SOURCE_DIR}/src
+)
+
+add_executable(
+    login_server 
+    src/servers/login_server.cc
+)
+target_link_libraries(
+    login_server 
+    udp_server
+)
+target_include_directories(
+    login_server 
+    PUBLIC
+    ${CMAKE_SOURCE_DIR}/src
 )
 
 install(
     TARGETS
     meadow
     udp_echo
+    login_server
     RUNTIME
     DESTINATION
     /home/nick/.local/bin

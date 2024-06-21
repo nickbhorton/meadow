@@ -15,6 +15,112 @@
   {
     "arguments": [
       "/usr/bin/c++",
+      "-std=gnu++23",
+      "-c",
+      "-o",
+      "CMakeFiles/http_parser.dir/src/http_response.cc.o",
+      "/home/nick/dev/meadow/src/http_response.cc"
+    ],
+    "directory": "/home/nick/dev/meadow/build",
+    "file": "/home/nick/dev/meadow/src/http_response.cc",
+    "output": "/home/nick/dev/meadow/build/CMakeFiles/http_parser.dir/src/http_response.cc.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/c++",
+      "-std=gnu++23",
+      "-c",
+      "-o",
+      "CMakeFiles/udp_server.dir/src/udp_server.cc.o",
+      "/home/nick/dev/meadow/src/udp_server.cc"
+    ],
+    "directory": "/home/nick/dev/meadow/build",
+    "file": "/home/nick/dev/meadow/src/udp_server.cc",
+    "output": "/home/nick/dev/meadow/build/CMakeFiles/udp_server.dir/src/udp_server.cc.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/c++",
+      "-std=gnu++23",
+      "-c",
+      "-o",
+      "CMakeFiles/meadow.dir/src/meadow.cc.o",
+      "/home/nick/dev/meadow/src/meadow.cc"
+    ],
+    "directory": "/home/nick/dev/meadow/build",
+    "file": "/home/nick/dev/meadow/src/meadow.cc",
+    "output": "/home/nick/dev/meadow/build/CMakeFiles/meadow.dir/src/meadow.cc.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/c++",
+      "-std=gnu++23",
+      "-c",
+      "-o",
+      "CMakeFiles/meadow.dir/src/helpers.cc.o",
+      "/home/nick/dev/meadow/src/helpers.cc"
+    ],
+    "directory": "/home/nick/dev/meadow/build",
+    "file": "/home/nick/dev/meadow/src/helpers.cc",
+    "output": "/home/nick/dev/meadow/build/CMakeFiles/meadow.dir/src/helpers.cc.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/c++",
+      "-std=gnu++23",
+      "-c",
+      "-o",
+      "CMakeFiles/meadow.dir/src/connection.cc.o",
+      "/home/nick/dev/meadow/src/connection.cc"
+    ],
+    "directory": "/home/nick/dev/meadow/build",
+    "file": "/home/nick/dev/meadow/src/connection.cc",
+    "output": "/home/nick/dev/meadow/build/CMakeFiles/meadow.dir/src/connection.cc.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/c++",
+      "-std=gnu++23",
+      "-c",
+      "-o",
+      "CMakeFiles/meadow.dir/src/request_handles.cc.o",
+      "/home/nick/dev/meadow/src/request_handles.cc"
+    ],
+    "directory": "/home/nick/dev/meadow/build",
+    "file": "/home/nick/dev/meadow/src/request_handles.cc",
+    "output": "/home/nick/dev/meadow/build/CMakeFiles/meadow.dir/src/request_handles.cc.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/c++",
+      "-I/home/nick/dev/meadow/src",
+      "-std=gnu++23",
+      "-c",
+      "-o",
+      "CMakeFiles/udp_echo.dir/src/servers/udp_echo.cc.o",
+      "/home/nick/dev/meadow/src/servers/udp_echo.cc"
+    ],
+    "directory": "/home/nick/dev/meadow/build",
+    "file": "/home/nick/dev/meadow/src/servers/udp_echo.cc",
+    "output": "/home/nick/dev/meadow/build/CMakeFiles/udp_echo.dir/src/servers/udp_echo.cc.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/c++",
+      "-I/home/nick/dev/meadow/src",
+      "-std=gnu++23",
+      "-c",
+      "-o",
+      "CMakeFiles/login_server.dir/src/servers/login_server.cc.o",
+      "/home/nick/dev/meadow/src/servers/login_server.cc"
+    ],
+    "directory": "/home/nick/dev/meadow/build",
+    "file": "/home/nick/dev/meadow/src/servers/login_server.cc",
+    "output": "/home/nick/dev/meadow/build/CMakeFiles/login_server.dir/src/servers/login_server.cc.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/c++",
       "-I/home/nick/dev/meadow/build/_deps/googletest-src/googletest/include",
       "-I/home/nick/dev/meadow/build/_deps/googletest-src/googletest",
       "-std=c++23",
@@ -63,6 +169,78 @@
   {
     "arguments": [
       "/usr/bin/c++",
+      "-I/home/nick/dev/meadow/src",
+      "-isystem",
+      "/home/nick/dev/meadow/build/_deps/googletest-src/googletest/include",
+      "-isystem",
+      "/home/nick/dev/meadow/build/_deps/googletest-src/googletest",
+      "-std=gnu++23",
+      "-c",
+      "-o",
+      "CMakeFiles/http_test.dir/test/http_parser_split.cc.o",
+      "/home/nick/dev/meadow/test/http_parser_split.cc"
+    ],
+    "directory": "/home/nick/dev/meadow/build",
+    "file": "/home/nick/dev/meadow/test/http_parser_split.cc",
+    "output": "/home/nick/dev/meadow/build/CMakeFiles/http_test.dir/test/http_parser_split.cc.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/c++",
+      "-I/home/nick/dev/meadow/src",
+      "-isystem",
+      "/home/nick/dev/meadow/build/_deps/googletest-src/googletest/include",
+      "-isystem",
+      "/home/nick/dev/meadow/build/_deps/googletest-src/googletest",
+      "-std=gnu++23",
+      "-c",
+      "-o",
+      "CMakeFiles/http_test.dir/test/http_parser_parse_request_line.cc.o",
+      "/home/nick/dev/meadow/test/http_parser_parse_request_line.cc"
+    ],
+    "directory": "/home/nick/dev/meadow/build",
+    "file": "/home/nick/dev/meadow/test/http_parser_parse_request_line.cc",
+    "output": "/home/nick/dev/meadow/build/CMakeFiles/http_test.dir/test/http_parser_parse_request_line.cc.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/c++",
+      "-I/home/nick/dev/meadow/src",
+      "-isystem",
+      "/home/nick/dev/meadow/build/_deps/googletest-src/googletest/include",
+      "-isystem",
+      "/home/nick/dev/meadow/build/_deps/googletest-src/googletest",
+      "-std=gnu++23",
+      "-c",
+      "-o",
+      "CMakeFiles/http_test.dir/test/http_parser_parse_header.cc.o",
+      "/home/nick/dev/meadow/test/http_parser_parse_header.cc"
+    ],
+    "directory": "/home/nick/dev/meadow/build",
+    "file": "/home/nick/dev/meadow/test/http_parser_parse_header.cc",
+    "output": "/home/nick/dev/meadow/build/CMakeFiles/http_test.dir/test/http_parser_parse_header.cc.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/c++",
+      "-I/home/nick/dev/meadow/src",
+      "-isystem",
+      "/home/nick/dev/meadow/build/_deps/googletest-src/googletest/include",
+      "-isystem",
+      "/home/nick/dev/meadow/build/_deps/googletest-src/googletest",
+      "-std=gnu++23",
+      "-c",
+      "-o",
+      "CMakeFiles/http_test.dir/test/http_parser_parse_target.cc.o",
+      "/home/nick/dev/meadow/test/http_parser_parse_target.cc"
+    ],
+    "directory": "/home/nick/dev/meadow/build",
+    "file": "/home/nick/dev/meadow/test/http_parser_parse_target.cc",
+    "output": "/home/nick/dev/meadow/build/CMakeFiles/http_test.dir/test/http_parser_parse_target.cc.o"
+  },
+  {
+    "arguments": [
+      "/usr/bin/c++",
       "-I/home/nick/dev/meadow/build/_deps/googletest-src/googlemock/include",
       "-I/home/nick/dev/meadow/build/_deps/googletest-src/googlemock",
       "-isystem",
@@ -86,24 +264,6 @@
     "directory": "/home/nick/dev/meadow/build/_deps/googletest-build/googlemock",
     "file": "/home/nick/dev/meadow/build/_deps/googletest-src/googlemock/src/gmock-all.cc",
     "output": "/home/nick/dev/meadow/build/_deps/googletest-build/googlemock/CMakeFiles/gmock.dir/src/gmock-all.cc.o"
-  },
-  {
-    "arguments": [
-      "/usr/bin/c++",
-      "-I/home/nick/dev/meadow/src",
-      "-isystem",
-      "/home/nick/dev/meadow/build/_deps/googletest-src/googletest/include",
-      "-isystem",
-      "/home/nick/dev/meadow/build/_deps/googletest-src/googletest",
-      "-std=gnu++23",
-      "-c",
-      "-o",
-      "CMakeFiles/http_test.dir/test/http.cc.o",
-      "/home/nick/dev/meadow/test/http.cc"
-    ],
-    "directory": "/home/nick/dev/meadow/build",
-    "file": "/home/nick/dev/meadow/test/http.cc",
-    "output": "/home/nick/dev/meadow/build/CMakeFiles/http_test.dir/test/http.cc.o"
   },
   {
     "arguments": [
