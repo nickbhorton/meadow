@@ -22,19 +22,36 @@ add_library(
     src/http_response.cc
 )
 
+add_library(
+    udp_server 
+    src/udp_server.cc
+)
+
 add_executable(
     meadow
-    src/server.cc
+    src/meadow.cc
     src/helpers.cc
     src/connection.cc
+    src/request_handles.cc
 )
 target_link_libraries(
     meadow
     http_parser
 )
+
+add_executable(
+    udp_echo 
+    src/udp_echo.cc
+)
+target_link_libraries(
+    udp_echo
+    udp_server
+)
+
 install(
     TARGETS
     meadow
+    udp_echo
     RUNTIME
     DESTINATION
     /home/nick/.local/bin
