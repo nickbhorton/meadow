@@ -39,6 +39,10 @@ int main(int argc, char** argv)
             ss >> word;
             context.port = stoi(word);
             server_address.sin_port = htons(context.port);
+        } else if (word == "data") {
+            word.clear();
+            ss >> word;
+            context.data_path = word;
         } else if (word == "index") {
             word.clear();
             ss >> word;
