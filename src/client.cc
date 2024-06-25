@@ -1,5 +1,5 @@
 #include "client.h"
-#include "server.h"
+#include "meadow_server.h"
 
 #include <arpa/inet.h>
 #include <cstring>
@@ -31,6 +31,20 @@ auto TcpClient::connect(std::string const& address, int port) -> bool
             fd,
             (struct sockaddr*)&server_address,
             sizeof(server_address)
+        ) < 0) {
+        connected = false;
+    } else {
+        connected = true;
+    }
+    return connected;
+}
+
+auto TcpClient::connect(sockaddr_in address) -> bool
+{
+    if (::connect(
+            fd,
+            (struct sockaddr*)&address,
+            sizeof(address)
         ) < 0) {
         connected = false;
     } else {

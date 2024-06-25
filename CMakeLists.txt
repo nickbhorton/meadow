@@ -24,7 +24,7 @@ add_library(
 )
 
 add_library(
-    server_utils 
+    meadow_server_utils 
     src/server.cc
     src/client.cc
 )
@@ -39,7 +39,7 @@ add_executable(
 target_link_libraries(
     meadow
     http_parser
-    server_utils
+    meadow_server_utils
 )
 
 add_executable(
@@ -48,7 +48,7 @@ add_executable(
 )
 target_link_libraries(
     udp_echo
-    server_utils 
+    meadow_server_utils 
 )
 target_include_directories(
     udp_echo
@@ -62,7 +62,7 @@ add_executable(
 )
 target_link_libraries(
     login_server 
-    server_utils 
+    meadow_server_utils 
 )
 target_include_directories(
     login_server 
@@ -78,6 +78,19 @@ install(
     RUNTIME
     DESTINATION
     /home/nick/.local/bin
+)
+
+install(
+    TARGETS
+    meadow_server_utils
+    DESTINATION
+    /usr/lib
+)
+install(
+    FILES
+    ${CMAKE_SOURCE_DIR}/src/meadow_server.h
+    DESTINATION
+    /usr/include
 )
 
 # TESTS
@@ -105,7 +118,7 @@ add_executable(
 )
 target_link_libraries(
     tcp_playground_server 
-    server_utils
+    meadow_server_utils
 )
 target_include_directories(
     tcp_playground_server 
@@ -119,7 +132,7 @@ add_executable(
 )
 target_link_libraries(
     tcp_playground_client
-    server_utils
+    meadow_server_utils
 )
 target_include_directories(
     tcp_playground_client

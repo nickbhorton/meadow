@@ -12,7 +12,8 @@ struct ServerContext {
     std::string mount_point;
     std::string data_path;
     std::vector<std::pair<std::string, std::string>> server_side_locations;
-    std::vector<std::pair<std::string, sockaddr_in>> endpoints;
+    std::vector<std::tuple<std::string, http::RequestMethod, sockaddr_in>>
+        endpoints;
     std::vector<std::pair<std::string, std::string>> extension_to_mime_type;
 };
 

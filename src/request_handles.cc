@@ -4,7 +4,9 @@
 #include <unistd.h>
 
 #include "basic_http_parser.h"
+#include "client.h"
 #include "helpers.h"
+#include "http_parser.h"
 #include "http_response.h"
 #include "request_handles.h"
 
@@ -82,24 +84,46 @@ void handle_get_request(
         server_locate(rc.url_filepath, sc.server_side_locations);
     std::string const filepath{sc.mount_point + location};
     std::cout << "GET: " << filepath << "  |  " << rc.url_filepath << "\n";
-    std::ifstream file(filepath.c_str());
-    if (file.good() && location.size() > 0) {
+    bool endpoint_found{false};
+    sockaddr_in addy{};
+    for (auto const& [servername, method, address] : sc.endpoints) {
+        if (servername == rc.url_filepath &&
+            method == http::RequestMethod::Get) {
+            std::cout << "server: " << servername << " port "
+                      << ntohs(address.sin_port) << "\n";
+            endpoint_found = true;
+            addy = address;
+        }
+    }
+    if (endpoint_found) {
+        TcpClient cli{};
+        cli.connect(addy);
+        cli.write_serialized_string(rc.url_query);
+        std::string response{cli.read_serialized_string()};
         http::ResponseHeader response_header{200, "Ok"};
-        response_header.add_header(
-            "Content-Type",
-            extension_to_mime_type(
-                get_file_extension(filepath),
-                sc.extension_to_mime_type
-            )
-        );
         response_header.add_header("Connection", "closed");
         connection.write(response_header.to_string());
-        connection.write(read_file_to_string(file));
+        connection.write(response);
     } else {
-        std::cout << "file not found\n";
-        http::ResponseHeader response_header{404, "Not Found"};
-        response_header.add_header("Connection", "closed");
-        connection.write(response_header.to_string());
+        std::ifstream file(filepath.c_str());
+        if (file.good() && location.size() > 0) {
+            http::ResponseHeader response_header{200, "Ok"};
+            response_header.add_header(
+                "Content-Type",
+                extension_to_mime_type(
+                    get_file_extension(filepath),
+                    sc.extension_to_mime_type
+                )
+            );
+            response_header.add_header("Connection", "closed");
+            connection.write(response_header.to_string());
+            connection.write(read_file_to_string(file));
+        } else {
+            std::cout << "file not found\n";
+            http::ResponseHeader response_header{404, "Not Found"};
+            response_header.add_header("Connection", "closed");
+            connection.write(response_header.to_string());
+        }
     }
 }
 
@@ -110,70 +134,28 @@ void handle_post_request(
 )
 {
     std::cout << "POST to endpoint " << rc.url_filepath << "\n";
+    /*
     for (auto const& [name, args] : rc.headers) {
         std::cout << "\t" << name << " : " << args << "\n";
     }
+    */
     if (rc.payload.size()) {
         std::cout << "Payload size: " << rc.payload.size() << "\n";
         sockaddr_in sendto_address{};
         bool found{false};
-        for (auto const& [servername, address] : sc.endpoints) {
-            if (servername == rc.url_filepath) {
+        for (auto const& [servername, method, address] : sc.endpoints) {
+            if (servername == rc.url_filepath &&
+                method == http::RequestMethod::Post) {
                 std::cout << "Port: " << address.sin_port << "\n";
                 sendto_address = address;
                 found = true;
             }
         }
         if (found) {
-            int udp_fd{};
-            if ((udp_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-                perror("socket creation failed");
-                exit(EXIT_FAILURE);
-            }
-            sockaddr_in servaddr{};
-            servaddr.sin_family = AF_INET; // IPv4
-            servaddr.sin_addr.s_addr = INADDR_ANY;
-            // find a valid port
-            servaddr.sin_port = 0;
-
-            // Bind the socket with the server address
-            if (bind(
-                    udp_fd,
-                    (const struct sockaddr*)&servaddr,
-                    sizeof(servaddr)
-                ) < 0) {
-                perror("bind failed");
-                exit(EXIT_FAILURE);
-            }
-            ssize_t sent_count = sendto(
-                udp_fd,
-                rc.payload.data(),
-                rc.payload.size(),
-                MSG_CONFIRM,
-                (const struct sockaddr*)&sendto_address,
-                sizeof(sendto_address)
-            );
-            std::cout << "Bytes sent: " << sent_count << "\n";
-            sockaddr_in cliaddr{};
-            socklen_t len = sizeof(cliaddr); // len is value/result
-            size_t constexpr max_udp_packet_size{65536};
-            char buffer[max_udp_packet_size];
-            int recv_count = recvfrom(
-                udp_fd,
-                (char*)buffer,
-                max_udp_packet_size,
-                MSG_WAITALL,
-                (struct sockaddr*)&cliaddr,
-                &len
-            );
-            std::string recv_string(buffer, recv_count);
-            std::cout << "From endpoint: " << recv_string << "\n";
-            close(udp_fd);
-
             http::ResponseHeader response_header{200, "Ok"};
             response_header.add_header("Connection", "closed");
             connection.write(response_header.to_string());
-            connection.write(recv_string);
+            connection.write("Post submit not implemented");
         } else {
             http::ResponseHeader response_header{503, "Service Unavalable"};
             response_header.add_header("Connection", "closed");

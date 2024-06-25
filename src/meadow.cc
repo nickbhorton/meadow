@@ -10,8 +10,8 @@
 #include <unistd.h>
 
 #include "connection.h"
+#include "meadow_server.h"
 #include "request_handles.h"
-#include "server.h"
 
 int main()
 {
@@ -64,8 +64,10 @@ int main()
         } else if (word == "endpoint") {
             std::string servername{};
             std::string address{};
+            std::string method{};
             int port{};
             ss >> servername;
+            ss >> method;
             ss >> address;
             ss >> port;
             sockaddr_in addr{};
@@ -74,7 +76,19 @@ int main()
             addr.sin_port = htons(port);
             std::cout << "endpoint: " << servername << " " << address << ":"
                       << port << "\n";
-            context.endpoints.push_back({servername, addr});
+            if (method == "get") {
+                context.endpoints.push_back(
+                    {servername, http::RequestMethod::Get, addr}
+                );
+            } else if (method == "post") {
+                context.endpoints.push_back(
+                    {servername, http::RequestMethod::Post, addr}
+                );
+            } else {
+                context.endpoints.push_back(
+                    {servername, http::RequestMethod::Get, addr}
+                );
+            }
         } else if (word.size() > 0) {
             std::cout << "unrecognized token: " << word << "\n";
         }
