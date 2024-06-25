@@ -5,8 +5,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-auto write_string(int fd, std::string const& mesg) -> int;
-auto read_string(int fd) -> std::string;
+auto write_string(int fd, std::string const& mesg, bool serialize = true)
+    -> int;
+auto read_serialized_string(int fd) -> std::string;
 
 class UdpServer
 {
@@ -60,6 +61,7 @@ public:
     auto is_valid() const -> bool;
     auto find_connection(int backlog) -> bool;
     auto close_connection() -> bool;
-    auto write_connection(std::string const& mesg) -> int;
-    auto read_connection() -> std::string;
+    auto write_serialized_string_connection(std::string const& mesg) -> int;
+    auto write_string_connection(std::string const& mesg) -> int;
+    auto read_serialized_string_connection() -> std::string;
 };

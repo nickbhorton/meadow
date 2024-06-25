@@ -3,20 +3,22 @@
 
 constexpr size_t buffer_size = 1024;
 
-auto write_string(int fd, std::string const& mesg) -> int
+auto write_string(int fd, std::string const& mesg, bool serialize) -> int
 {
     unsigned int string_size = mesg.size();
     int total_bytes_sent{0};
-    int current_bytes_sent =
-        ::write(fd, (const char*)&string_size, sizeof(string_size));
-    if (current_bytes_sent < 0) {
-        std::cerr << "write() failed TcpServer: " << std::strerror(errno)
-                  << "\n";
-        return -1;
+    if (serialize) {
+        int current_bytes_sent =
+            ::write(fd, (const char*)&string_size, sizeof(string_size));
+        if (current_bytes_sent < 0) {
+            std::cerr << "write() failed TcpServer: " << std::strerror(errno)
+                      << "\n";
+            return -1;
+        }
+        // std::cout << "bytes sent count: " << current_bytes_sent << "\n";
+        // std::cout << "write_string size: " << string_size << "\n";
+        total_bytes_sent += current_bytes_sent;
     }
-    // std::cout << "bytes sent count: " << current_bytes_sent << "\n";
-    // std::cout << "write_string size: " << string_size << "\n";
-    total_bytes_sent += current_bytes_sent;
 
     unsigned int string_pos{0};
     while (string_pos + buffer_size < mesg.size()) {
@@ -44,7 +46,7 @@ auto write_string(int fd, std::string const& mesg) -> int
     return total_bytes_sent;
 }
 
-auto read_string(int fd) -> std::string
+auto read_serialized_string(int fd) -> std::string
 {
     // std::cout << "START READ\n";
     unsigned int bytes_to_read{0};
@@ -265,18 +267,26 @@ auto TcpServer::close_connection() -> bool
     return false;
 }
 
-auto TcpServer::write_connection(std::string const& mesg) -> int
+auto TcpServer::write_serialized_string_connection(std::string const& mesg)
+    -> int
 {
     if ((!connection_active) || (!connection_fd)) {
         return -1;
     }
-    return write_string(connection_fd, mesg);
+    return write_string(connection_fd, mesg, true);
+}
+auto TcpServer::write_string_connection(std::string const& mesg) -> int
+{
+    if ((!connection_active) || (!connection_fd)) {
+        return -1;
+    }
+    return write_string(connection_fd, mesg, false);
 }
 
-auto TcpServer::read_connection() -> std::string
+auto TcpServer::read_serialized_string_connection() -> std::string
 {
     if ((!connection_active) || (!connection_fd)) {
         return "";
     }
-    return read_string(connection_fd);
+    return read_serialized_string(connection_fd);
 }

@@ -5,7 +5,7 @@
 int main()
 {
     int port = 50011;
-    size_t random_string_size{1'000'000'000};
+    size_t random_string_size{10'000'000};
     std::string random_string{};
     while (random_string.size() < random_string_size) {
         random_string.push_back(97 + (random() % 26));
@@ -21,8 +21,8 @@ int main()
     if (!s1.is_valid()) {
         std::exit(1);
     }
-    std::cout << s1.read_connection() << "\n";
-    s1.write_connection("hello client");
-    s1.write_connection(random_string);
+    std::cout << s1.read_serialized_string_connection() << "\n";
+    s1.write_serialized_string_connection("hello client");
+    s1.write_serialized_string_connection(random_string);
     return 0;
 }

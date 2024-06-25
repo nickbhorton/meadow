@@ -6,7 +6,6 @@
 #include <iostream>
 #include <unistd.h>
 
-
 TcpClient::TcpClient()
 {
     if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
@@ -40,18 +39,26 @@ auto TcpClient::connect(std::string const& address, int port) -> bool
     return connected;
 }
 
-auto TcpClient::write(std::string const& mesg) -> int
+auto TcpClient::write_string(std::string const& mesg) -> int
 {
     if (!connected) {
         return -1;
     }
-    return write_string(fd, mesg);
+    return ::write_string(fd, mesg, false);
 }
 
-auto TcpClient::read() -> std::string
+auto TcpClient::write_serialized_string(std::string const& mesg) -> int
+{
+    if (!connected) {
+        return -1;
+    }
+    return ::write_string(fd, mesg, true);
+}
+
+auto TcpClient::read_serialized_string() -> std::string
 {
     if (!connected) {
         return "";
     }
-    return read_string(fd);
+    return ::read_serialized_string(fd);
 }

@@ -16,6 +16,7 @@ public:
     TcpClient(TcpClient&&) = delete;
 
     auto connect(std::string const& address, int port) -> bool;
-    auto write(std::string const& mesg) -> int;
-    auto read() -> std::string;
+    auto write_serialized_string(std::string const& mesg) -> int;
+    auto write_string(std::string const& mesg) -> int;
+    auto read_serialized_string() -> std::string;
 };
