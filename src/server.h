@@ -5,6 +5,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+auto write_string(int fd, std::string const& mesg) -> int;
+auto read_string(int fd) -> std::string;
+
 class UdpServer
 {
     sockaddr_in address;

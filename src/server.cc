@@ -1,7 +1,92 @@
 #include "server.h"
 #include <unistd.h>
 
-constexpr size_t buffer_size = 64;
+constexpr size_t buffer_size = 1024;
+
+auto write_string(int fd, std::string const& mesg) -> int
+{
+    unsigned int string_size = mesg.size();
+    int total_bytes_sent{0};
+    int current_bytes_sent =
+        ::write(fd, (const char*)&string_size, sizeof(string_size));
+    if (current_bytes_sent < 0) {
+        std::cerr << "write() failed TcpServer: " << std::strerror(errno)
+                  << "\n";
+        return -1;
+    }
+    // std::cout << "bytes sent count: " << current_bytes_sent << "\n";
+    // std::cout << "write_string size: " << string_size << "\n";
+    total_bytes_sent += current_bytes_sent;
+
+    unsigned int string_pos{0};
+    while (string_pos + buffer_size < mesg.size()) {
+        int current_bytes_send =
+            ::write(fd, mesg.data() + string_pos, sizeof(buffer_size));
+        if (current_bytes_send < 0) {
+            std::cerr << "write() failed TcpServer: " << std::strerror(errno)
+                      << "\n";
+            return -1;
+        }
+        string_pos += current_bytes_send;
+    }
+    int bytes_left = mesg.size() - string_pos;
+    if (bytes_left > 0) {
+        int current_bytes_send =
+            ::write(fd, mesg.data() + string_pos, bytes_left);
+        if (current_bytes_send < 0) {
+            std::cerr << "write() failed TcpServer: " << std::strerror(errno)
+                      << "\n";
+            return -1;
+        }
+        string_pos += current_bytes_send;
+    }
+    total_bytes_sent += string_pos;
+    return total_bytes_sent;
+}
+
+auto read_string(int fd) -> std::string
+{
+    // std::cout << "START READ\n";
+    unsigned int bytes_to_read{0};
+    int current_bytes_read =
+        ::read(fd, (char*)&bytes_to_read, sizeof(bytes_to_read));
+    // std::cout << "bytes recv count: " << current_bytes_read << "\n";
+    // std::cout << "read_string size: " << bytes_to_read << "\n";
+    if (current_bytes_read < 0) {
+        std::cerr << "read() failed TcpServer: " << std::strerror(errno)
+                  << "\n";
+        return "";
+    }
+    std::string result{};
+    result.resize(bytes_to_read);
+    unsigned int string_pos{0};
+    while (static_cast<int>(bytes_to_read) - static_cast<int>(string_pos) > 0) {
+        int current_bytes_read = ::read(
+            fd,
+            result.data() + string_pos,
+            (buffer_size > bytes_to_read) ? bytes_to_read : buffer_size
+        );
+        if (current_bytes_read < 0) {
+            std::cerr << "read() failed TcpServer: " << std::strerror(errno)
+                      << "\n";
+            return "";
+        }
+        string_pos += current_bytes_read;
+    }
+    int bytes_left = bytes_to_read - string_pos;
+    if (bytes_left > 0) {
+        int current_bytes_read =
+            ::read(fd, result.data() + string_pos, bytes_left);
+        if (current_bytes_read < 0) {
+            std::cerr << "read() failed TcpServer: " << std::strerror(errno)
+                      << "\n";
+            return "";
+        }
+    }
+    // std::cout << "STRING READ RESULT: " << result << "\n";
+    // std::cout << result.size() << "\n";
+    return result;
+}
 
 UdpServer::UdpServer(
     std::string server_address,
@@ -185,44 +270,7 @@ auto TcpServer::write_connection(std::string const& mesg) -> int
     if ((!connection_active) || (!connection_fd)) {
         return -1;
     }
-    size_t string_size = mesg.size();
-    int total_bytes_sent{0};
-    int current_bytes_sent =
-        ::write(connection_fd, (const char*)&string_size, sizeof(string_size));
-    if (current_bytes_sent < 0) {
-        std::cerr << "write() failed TcpServer: " << std::strerror(errno)
-                  << "\n";
-        return -1;
-    }
-    total_bytes_sent += current_bytes_sent;
-
-    size_t string_pos{0};
-    while (string_pos + buffer_size < mesg.size()) {
-        int current_bytes_send = ::write(
-            connection_fd,
-            mesg.data() + string_pos,
-            sizeof(buffer_size)
-        );
-        if (current_bytes_send < 0) {
-            std::cerr << "write() failed TcpServer: " << std::strerror(errno)
-                      << "\n";
-            return -1;
-        }
-        string_pos += current_bytes_send;
-    }
-    int bytes_left = mesg.size() - string_pos;
-    if (bytes_left > 0) {
-        int current_bytes_send =
-            ::write(connection_fd, mesg.data() + string_pos, bytes_left);
-        if (current_bytes_send < 0) {
-            std::cerr << "write() failed TcpServer: " << std::strerror(errno)
-                      << "\n";
-            return -1;
-        }
-        string_pos += current_bytes_send;
-    }
-    total_bytes_sent += string_pos;
-    return total_bytes_sent;
+    return write_string(connection_fd, mesg);
 }
 
 auto TcpServer::read_connection() -> std::string
@@ -230,38 +278,5 @@ auto TcpServer::read_connection() -> std::string
     if ((!connection_active) || (!connection_fd)) {
         return "";
     }
-    char buffer[buffer_size];
-    size_t bytes_to_read{};
-    int current_bytes_read =
-        ::read(connection_fd, (char*)&bytes_to_read, sizeof(bytes_to_read));
-    if (current_bytes_read < 0) {
-        std::cerr << "read() failed TcpServer: " << std::strerror(errno)
-                  << "\n";
-        return "";
-    }
-    std::string result{};
-    result.resize(bytes_to_read);
-    size_t string_pos{};
-    while (static_cast<int>(bytes_to_read) - static_cast<int>(buffer_size) > 0
-    ) {
-        int current_bytes_read =
-            ::read(connection_fd, result.data() + string_pos, buffer_size);
-        if (current_bytes_read < 0) {
-            std::cerr << "read() failed TcpServer: " << std::strerror(errno)
-                      << "\n";
-            return "";
-        }
-        string_pos += current_bytes_read;
-    }
-    int bytes_left = bytes_to_read - string_pos;
-    if (bytes_left > 0) {
-        int current_bytes_read =
-            ::read(connection_fd, result.data() + string_pos, bytes_left);
-        if (current_bytes_read < 0) {
-            std::cerr << "read() failed TcpServer: " << std::strerror(errno)
-                      << "\n";
-            return "";
-        }
-    }
-    return result;
+    return read_string(connection_fd);
 }

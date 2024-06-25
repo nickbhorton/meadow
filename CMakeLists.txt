@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.29)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED On)
+add_compile_options(-g -Wall -Wextra -Wpedantic)
 
 project(
     meadow
@@ -98,15 +99,29 @@ target_include_directories(
 )
 
 add_executable(
-    tcp_playground 
-    test/tcp_playground.cc
+    tcp_playground_server 
+    test/tcp_playground_server.cc
 )
 target_link_libraries(
-    tcp_playground 
+    tcp_playground_server 
     server_utils
 )
 target_include_directories(
-    tcp_playground 
+    tcp_playground_server 
+    PUBLIC
+    ${CMAKE_SOURCE_DIR}/src
+)
+
+add_executable(
+    tcp_playground_client
+    test/tcp_playground_client.cc
+)
+target_link_libraries(
+    tcp_playground_client
+    server_utils
+)
+target_include_directories(
+    tcp_playground_client
     PUBLIC
     ${CMAKE_SOURCE_DIR}/src
 )
