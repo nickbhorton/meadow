@@ -110,8 +110,11 @@ void handle_post_request(
 )
 {
     std::cout << "POST to endpoint " << rc.url_filepath << "\n";
+    for (auto const& [name, args] : rc.headers) {
+        std::cout << "\t" << name << " : " << args << "\n";
+    }
     if (rc.payload.size()) {
-        std::cout << "Payload: " << rc.payload << "\n";
+        std::cout << "Payload size: " << rc.payload.size() << "\n";
         sockaddr_in sendto_address{};
         bool found{false};
         for (auto const& [servername, address] : sc.endpoints) {

@@ -23,8 +23,9 @@ add_library(
 )
 
 add_library(
-    udp_server 
-    src/udp_server.cc
+    server_utils 
+    src/server.cc
+    src/client.cc
 )
 
 add_executable(
@@ -45,7 +46,7 @@ add_executable(
 )
 target_link_libraries(
     udp_echo
-    udp_server
+    server_utils 
 )
 target_include_directories(
     udp_echo
@@ -59,7 +60,7 @@ add_executable(
 )
 target_link_libraries(
     login_server 
-    udp_server
+    server_utils 
 )
 target_include_directories(
     login_server 
@@ -94,6 +95,20 @@ target_include_directories(
   http_test
   PUBLIC
   ${CMAKE_SOURCE_DIR}/src
+)
+
+add_executable(
+    tcp_playground 
+    test/tcp_playground.cc
+)
+target_link_libraries(
+    tcp_playground 
+    server_utils
+)
+target_include_directories(
+    tcp_playground 
+    PUBLIC
+    ${CMAKE_SOURCE_DIR}/src
 )
 
 enable_testing()

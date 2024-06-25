@@ -91,14 +91,6 @@ int main(int argc, char** argv)
         std::exit(1);
     }
 
-    if (bind(
-            socket_fd,
-            (struct sockaddr*)&server_address,
-            sizeof(server_address)
-        ) < 0) {
-        std::cerr << "bind() call failed\n";
-        std::exit(1);
-    }
     {
         int enable{1};
         if (setsockopt(
@@ -123,6 +115,14 @@ int main(int argc, char** argv)
         }
     }
 
+    if (bind(
+            socket_fd,
+            (struct sockaddr*)&server_address,
+            sizeof(server_address)
+        ) < 0) {
+        std::cerr << "bind() call failed\n";
+        std::exit(1);
+    }
     while (true) {
         listen(socket_fd, 5);
         sockaddr_in client_address{};
