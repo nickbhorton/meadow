@@ -57,6 +57,7 @@ public:
     TcpServer(TcpServer const&) = delete;
     TcpServer(TcpServer&&) = delete;
 
+    auto get_connection_fd() -> int;
     auto get_port() const -> int;
     auto is_valid() const -> bool;
     auto find_connection(int backlog) -> bool;

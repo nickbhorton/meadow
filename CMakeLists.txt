@@ -39,6 +39,7 @@ add_executable(
 target_link_libraries(
     meadow
     http_parser
+    server_utils
 )
 
 add_executable(

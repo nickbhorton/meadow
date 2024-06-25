@@ -11,8 +11,9 @@
 
 #include "connection.h"
 #include "request_handles.h"
+#include "server.h"
 
-int main(int argc, char** argv)
+int main()
 {
     std::ifstream meadow_file{};
     meadow_file.open("meadow.txt");
@@ -20,9 +21,6 @@ int main(int argc, char** argv)
         std::cerr << "did not find meadow.txt file\n";
         std::exit(1);
     }
-    sockaddr_in server_address{};
-    server_address.sin_family = AF_INET;
-    server_address.sin_addr.s_addr = INADDR_ANY;
     ServerContext context{};
     std::string line_buffer{};
     while (!meadow_file.eof()) {
@@ -38,7 +36,6 @@ int main(int argc, char** argv)
             word.clear();
             ss >> word;
             context.port = stoi(word);
-            server_address.sin_port = htons(context.port);
         } else if (word == "data") {
             word.clear();
             ss >> word;
@@ -85,56 +82,12 @@ int main(int argc, char** argv)
     std::cout << "Meadow server mounted on " << context.mount_point << "\n";
     std::cout << "Port: " << context.port << "\n";
 
-    int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (socket_fd < 0) {
-        std::cerr << "socket() call failed\n";
-        std::exit(1);
-    }
-
-    {
-        int enable{1};
-        if (setsockopt(
-                socket_fd,
-                SOL_SOCKET,
-                SO_REUSEADDR,
-                &enable,
-                sizeof(enable)
-            ) < 0) {
-            std::cerr << "setsockopt() SO_REUSEADDR call failed\n";
-            std::exit(1);
-        }
-        if (setsockopt(
-                socket_fd,
-                SOL_SOCKET,
-                SO_REUSEPORT,
-                &enable,
-                sizeof(enable)
-            ) < 0) {
-            std::cerr << "setsockopt() SO_REUSEPORT call failed\n";
-            std::exit(1);
-        }
-    }
-
-    if (bind(
-            socket_fd,
-            (struct sockaddr*)&server_address,
-            sizeof(server_address)
-        ) < 0) {
-        std::cerr << "bind() call failed\n";
-        std::exit(1);
-    }
+    TcpServer server{"127.0.0.1", context.port};
     while (true) {
-        listen(socket_fd, 5);
-        sockaddr_in client_address{};
-        socklen_t client_length = sizeof(client_address);
-        int connection_fd = accept(
-            socket_fd,
-            (struct sockaddr*)&client_address,
-            &client_length
-        );
+        server.find_connection(5);
+        int connection_fd = server.get_connection_fd();
         if (connection_fd < 0) {
-            std::cerr << "accept() call failed\n";
-            close(connection_fd);
+            std::cerr << "TcpServer::get_connection_fd() call failed\n";
         } else {
             http::Connection connection(connection_fd);
             handle_request(connection, context);

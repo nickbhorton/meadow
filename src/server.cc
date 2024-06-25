@@ -290,3 +290,11 @@ auto TcpServer::read_serialized_string_connection() -> std::string
     }
     return read_serialized_string(connection_fd);
 }
+
+auto TcpServer::get_connection_fd() -> int
+{
+    if ((!connection_active) || (!connection_fd)) {
+        return -1;
+    }
+    return connection_fd;
+}
