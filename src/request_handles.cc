@@ -100,10 +100,18 @@ void handle_get_request(
         cli.connect(addy);
         cli.write_serialized_string(rc.url_query);
         std::string response{cli.read_serialized_string()};
-        http::ResponseHeader response_header{200, "Ok"};
-        response_header.add_header("Connection", "closed");
-        connection.write(response_header.to_string());
-        connection.write(response);
+        if (response.size() == 1) {
+            if (response == "1") {
+                http::ResponseHeader response_header{404, "Not Found"};
+                response_header.add_header("Connection", "closed");
+                connection.write(response_header.to_string());
+            }
+        } else {
+            http::ResponseHeader response_header{200, "Ok"};
+            response_header.add_header("Connection", "closed");
+            connection.write(response_header.to_string());
+            connection.write(response);
+        }
     } else {
         std::ifstream file(filepath.c_str());
         if (file.good() && location.size() > 0) {
