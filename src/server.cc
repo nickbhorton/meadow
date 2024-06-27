@@ -193,8 +193,15 @@ TcpServer::TcpServer(
     }
     // Filling server information
     address.sin_family = AF_INET; // IPv4
-    address.sin_addr.s_addr = INADDR_ANY;
-    inet_pton(address.sin_family, server_address.c_str(), &address.sin_addr);
+    if (server_address == "any") {
+        address.sin_addr.s_addr = INADDR_ANY;
+    } else {
+        inet_pton(
+            address.sin_family,
+            server_address.c_str(),
+            &address.sin_addr
+        );
+    }
     address.sin_port = htons(port);
 
     int enable{1};

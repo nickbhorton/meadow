@@ -96,7 +96,7 @@ int main()
     std::cout << "Meadow server mounted on " << context.mount_point << "\n";
     std::cout << "Port: " << context.port << "\n";
 
-    TcpServer server{"127.0.0.1", context.port};
+    TcpServer server{"any", context.port};
     while (true) {
         server.find_connection(5);
         int connection_fd = server.get_connection_fd();
