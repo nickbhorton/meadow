@@ -18,3 +18,5 @@ auto extension_to_mime_type(
     std::vector<std::pair<std::string, std::string>> const&
         extension_to_mime_type
 ) -> std::string;
+auto get_endpoint_name(std::string const& url) -> std::string;
+auto split_on(std::string const& s, char c) -> std::vector<std::string>;

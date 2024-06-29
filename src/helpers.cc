@@ -105,3 +105,36 @@ auto extension_to_mime_type(
     std::cerr << "mime type not found for " << extension << "\n";
     return "text/plain";
 }
+
+auto get_endpoint_name(std::string const& url) -> std::string
+{
+    auto const pos{url.find_first_of("/")};
+    std::string endpoint_name{};
+    if (pos == 0) {
+        std::string const url_no_front_slash{url.substr(pos + 1)};
+        auto const pos2{url_no_front_slash.find_first_of("/")};
+        endpoint_name = url_no_front_slash.substr(0, pos2);
+    } else {
+        endpoint_name = url.substr(0, pos);
+    }
+    return endpoint_name;
+}
+
+auto split_on(std::string const& s, char c) -> std::vector<std::string>
+{
+    std::vector<std::string> result{};
+    std::string left{s};
+    while (true) {
+        auto pos = left.find_first_of(c);
+        if (pos == std::string::npos) {
+            result.push_back(left);
+            break;
+        }
+        std::string add{left.substr(0, pos)};
+        if (add.size()) {
+            result.push_back(add);
+        }
+        left = left.substr(pos + 1);
+    }
+    return result;
+}

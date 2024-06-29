@@ -80,24 +80,38 @@ void handle_get_request(
     http::Connection& connection
 )
 {
-    std::string const location =
-        server_locate(rc.url_filepath, sc.server_side_locations);
-    std::string const filepath{sc.mount_point + location};
-    std::cout << "GET: " << filepath << "  |  " << rc.url_filepath << "\n";
+    std::cout << "GET: " << rc.url_filepath << "\n";
+
     bool endpoint_found{false};
     sockaddr_in addy{};
     for (auto const& [servername, method, address] : sc.endpoints) {
-        if (servername == rc.url_filepath &&
-            method == http::RequestMethod::Get) {
-            std::cout << "server: " << servername << " port "
-                      << ntohs(address.sin_port) << "\n";
+        if (get_endpoint_name(servername) ==
+            get_endpoint_name(rc.url_filepath)) {
+            std::cout << "Endpoint: " << get_endpoint_name(servername) << "\n";
+            std::cout << "Url Vec: ";
+            std::vector<std::string> path{split_on(rc.url_filepath, '/')};
+            for (auto const& p : path) {
+                std::cout << p << " ";
+            }
+            std::cout << "\n";
             endpoint_found = true;
             addy = address;
         }
     }
+
     if (endpoint_found) {
         TcpClient cli{};
         cli.connect(addy);
+        cli.write_serialized_string("get");
+        std::vector<std::string> path{split_on(rc.url_filepath, '/')};
+        std::string path_no_endpoint{"/"};
+        for (int i = 1; i < path.size(); i++) {
+            path_no_endpoint += path[i];
+            if (i != path.size() - 1) {
+                path_no_endpoint += '/';
+            }
+        }
+        cli.write_serialized_string(path_no_endpoint);
         cli.write_serialized_string(rc.url_query);
         std::string response{cli.read_serialized_string()};
         if (response.size() == 1) {
@@ -113,6 +127,9 @@ void handle_get_request(
             connection.write(response);
         }
     } else {
+        std::string const location =
+            server_locate(rc.url_filepath, sc.server_side_locations);
+        std::string const filepath{sc.mount_point + location};
         std::ifstream file(filepath.c_str());
         if (file.good() && location.size() > 0) {
             http::ResponseHeader response_header{200, "Ok"};
@@ -142,19 +159,12 @@ void handle_post_request(
 )
 {
     std::cout << "POST to endpoint " << rc.url_filepath << "\n";
-    /*
-    for (auto const& [name, args] : rc.headers) {
-        std::cout << "\t" << name << " : " << args << "\n";
-    }
-    */
     if (rc.payload.size()) {
         std::cout << "Payload size: " << rc.payload.size() << "\n";
         sockaddr_in sendto_address{};
         bool found{false};
         for (auto const& [servername, method, address] : sc.endpoints) {
-            if (servername == rc.url_filepath &&
-                method == http::RequestMethod::Post) {
-                std::cout << "Port: " << address.sin_port << "\n";
+            if (servername == rc.url_filepath) {
                 sendto_address = address;
                 found = true;
             }
